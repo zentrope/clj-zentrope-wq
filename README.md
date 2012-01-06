@@ -11,16 +11,16 @@ narrowly focussed library which might only really work for me.
 
 ## Usage
 
-    ```clojure
-    (:require zentrope.wq :as wq)
+```clojure
+(:require zentrope.wq :as wq)
 
-    (wq/start :my-queue 3 (fn [value] (println value)))
+(wq/start :my-queue 3 (fn [value] (println value)))
 
-    (doseq [v (range 100)]
-      (wq/put :my-queue v))
+(doseq [v (range 100)]
+  (wq/put :my-queue v))
 
-    (wq/stop :my-queue)
-    ```
+(wq/stop :my-queue)
+```
 
 ## Notes
 
