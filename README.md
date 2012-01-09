@@ -104,6 +104,9 @@ Really, though, there's nothing more to it than the "Usage" example above.
  * Maybe change start/stop to create!/destroy! or something more
    Clojure-like, and less Erlang-like.
 
+ * How about a function passed in with a queue that gets invoked
+   when there's an exception? Similar to the "agent" API.
+
  * Make sure things are shutdown properly by adding JVM shutdown
    hooks.
 
