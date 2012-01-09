@@ -1,20 +1,87 @@
 <!-- -*- mode: markdown; mode: auto-fill; -*- -->
 
-# clj-zentrope.wq
+# clj-zentrope-wq (Trivial Managed Concurrent Work Queues) 0.1.0
 
-Workers and queues managed as a self-contained resource rather than a
-data structure and functions. Possibly more like a framework than a
-library. Possibly not.
+## Introduction
 
-Not ready until I fix up this documentation. Regardless, this is a
-narrowly focussed library which might only really work for me.
+Zentrope WQ is a convenience library providing a name space for
+managing queues and workers all in one place so that the rest of your
+code doesn't have to.
+
+## Install
+
+To install via Leiningen:
+
+```clojure
+[org.clojars.zentrope/zentrope.wq "0.1.0"]
+```
+
+This should pull in everything you need. (NOTE: This lib uses
+`clojure.tools.logging` for status information, so you might want to
+make sure you're using something compatible with that.)
+
+## Rationale
+
+Provides a name space for managing queues and workers all in one place
+so that the rest of your code doesn't have to. I've found this pattern
+useful in several of my apps (backend-processing, batch-job kinds of
+things) and so I thought I'd put it up in Github in case it's useful
+to others, but also to make it more easily distributed across my own
+apps.
+
+The idea is that you declare named queues, assign workers to them,
+then start "putting" values in the queues to be processed by the
+workers (each running in a thread).
+
+Workers might (for instance), do some processing on a job, the put the
+job in other queues for other workers, thus creating a pipeline of
+sorts in which jobs are processed in parallel.
+
+Because the queues are managed by a process inside a single name
+space, your app doesn't have to manage queue and thread resources and
+can, instead, focus on the problem any given worker needs to solve.
+
+This lib does nothing new, it just makes the old stuff a quantum
+easier.
+
+A few other assumptions:
+
+ * This lib assumes workers exist to produce side-effects (query
+   databases, write to file systems, pull or push network resources,
+   send messages, etc). Otherwise, much more focused and functional
+   patterns seem more appropriate.
+
+ * Workers will keep on working despite exceptions unless an
+   `InterruptException` is thrown.
+
+ * Blocking Queues: As of this writing, I use the `ArrayBlockingQueue`
+   data structure from `java.util.concurrent` for a couple of reasons:
+
+     - The GC behavior works much better than the other similar
+       structures such that an overloaded system won't blow out memory.
+
+     - The queue sized is a fixed value such that a process putting a
+       value into the queue will block if the queue is full. This is
+       what I (at least) when you assume an infinite stream of jobs
+       flowing through the system from (say) a gigantic network query.
+
+I think that about covers it.
 
 ## Usage
 
-```clojure
-(:require zentrope.wq :as wq)
+Three workers (each in an individual thread) will eat from a queue and
+print the value:
 
-(wq/start :my-queue 3 (fn [value] (println value)))
+```clojure
+(:require zentrope-wq/worker-queues :as wq)
+
+(def num-workers 3)
+
+(defn worker-fn
+  [value]
+  (println "value:" value))
+
+(wq/start :my-queue num-workers worker-fn)
 
 (doseq [v (range 100)]
   (wq/put :my-queue v))
@@ -22,46 +89,25 @@ narrowly focussed library which might only really work for me.
 (wq/stop :my-queue)
 ```
 
-## Notes
+## Examples
 
-To be integrated into a reasonably brief README:
+Check
+[here](https://github.com/zentrope/clj-zentrope-wq/tree/master/src/zentrope_wq/examples)
+for examples:
 
- * Problem: Single queue, many workers, lots of side-effects. Also,
-   maybe too many jobs for a given JVM, so need to "block" when
-   putting in to a queue.
+  * [/src/zentrope_wq/examples](https://github.com/zentrope/clj-zentrope-wq/tree/master/src/zentrope_wq/examples)
 
- * Itch: I don't like to have a lot of "queue/worker" logic repeated
-   across a lot of name spaces. Can't I just "send a message" to a
-   name space and have it do the right thing?
+Really, though, there's nothing more to it than the "Usage" example above.
 
- * Idea: Leave the management of all the queues to a single name
-   space. Just hand it an identifier, the number of workers and a
-   worker-function. You can then "put" stuff to that queue, and stop
-   the queue, using that identifier.
+## Road Map
 
- * Motivation: I generally use this to create a chain of queues around
-   which buzz workers. Each queue/worker combo does something to a
-   job, then passes it along to the next queue, if possible. (There's
-   no DSL for stiching chains together. These jobs usually involve
-   writing to the file system, querying data stores, uploading to
-   Amazon S3, etc, etc. Lots of nasty side effects, all of which might
-   fail at any given time. Mostly, I want to be able to tune each
-   stage as to the number of workers (lots for uploads, a few for DB
-   access, etc).
+ * Maybe change start/stop to create!/destroy! or something more
+   Clojure-like, and less Erlang-like.
 
-Really just a convenience module, I think.
+ * Make sure things are shutdown properly by adding JVM shutdown
+   hooks.
 
-## Roadmap
-
-Before initial clojars release:
-
- * Finish this readme.
-
- * Better documented examples.
-
- * Make sure things are shutdown properly by adding JVM shutdown hooks.
-
-When I can:
+ * Configurable queue size. (Oops!)
 
  * Re-implement queue / worker logic using Executor thread pools
    rather than my own hacks.

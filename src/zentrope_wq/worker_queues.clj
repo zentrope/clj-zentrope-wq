@@ -1,4 +1,4 @@
-(ns zentrope-wq.core
+(ns zentrope-wq.worker-queues
   (:import [java.util.concurrent ArrayBlockingQueue TimeUnit])
   (:require [clojure.tools.logging :as log]))
 

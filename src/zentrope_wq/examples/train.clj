@@ -1,16 +1,16 @@
 (ns zentrope-wq.examples.train
   ;;
+  ;; A complicated example in which a hash-map is moved
+  ;; from queue to queue, with "successes" and "failures"
+  ;; monitored by a "control" such that we can tell how
+  ;; a given batch of jobs has fared.
   ;;
-  (:require [zentrope-wq.core :as wq]
+  (:require [zentrope-wq.worker-queues :as wq]
             [clojure.tools.logging :as log]))
 
-;; Some lightweight batch job control so that
-;; we don't send any more jobs through the train
-;; of Queues until we're done.
+;; Job control stuff
 
 (def ^:private num-jobs (atom 0))
-(def ^:private successes (atom 0))
-(def ^:private failures (atom 0))
 
 (defn- set-job-count!
   [count]
@@ -37,8 +37,17 @@
        (job-failure!)
        (throw t#))))
 
+(defn- wait-for-completion
+  []
+  (Thread/sleep 1000)
+  (log/info "num-jobs" @num-jobs)
+  (when-not (jobs-complete?)
+    (recur)))
+
 (def ^:private successes (atom []))
 (def ^:private failures (atom []))
+
+;; Simulate failures due to side effects.
 
 (defn- maybe-fail
   "Simulates a side-effect kind of failure in processing
@@ -48,6 +57,8 @@ collection of failed jobs."
   (when (= (rand-int 100) 2)
     (swap! failures conj job)
     (throw (Exception. "simulated failed"))))
+
+;; Worker functions
 
 (defn- query-worker-fn
   [value]
@@ -68,6 +79,8 @@ collection of failed jobs."
     (job-success!)
       (swap! successes conj (assoc value :pruned? true))))
 
+;; App lifecycle
+
 (defn- start
   []
   (wq/start :query-q 10 query-worker-fn)
@@ -78,13 +91,6 @@ collection of failed jobs."
   []
   (doseq [q [:query-q :process-q :delete-q]]
     (wq/stop q)))
-
-(defn- wait-for-completion
-  []
-  (Thread/sleep 1000)
-  (log/info "num-jobs" @num-jobs)
-  (when-not (jobs-complete?)
-    (recur)))
 
 (defn -main
   [& args]
