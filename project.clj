@@ -1,4 +1,4 @@
-(defproject clj-zentrope.wq "0.1.0"
+(defproject org.clojars.zentrope/zentrope-wq "0.1.0"
   :description "Simple, managed array-list based worker queues."
   :run-aliases {:doubler zentrope-wq.examples.doubler
                 :train zentrope-wq.examples.train }
