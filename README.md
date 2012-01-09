@@ -73,7 +73,7 @@ Three workers (each in an individual thread) will eat from a queue and
 print the value:
 
 ```clojure
-(:require zentrope-wq/worker-queues :as wq)
+(:require zentrope-wq.worker-queues :as wq)
 
 (def num-workers 3)
 
