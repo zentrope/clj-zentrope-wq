@@ -52,7 +52,7 @@ A few other assumptions:
    patterns seem more appropriate.
 
  * Workers will keep on working despite exceptions unless an
-   `InterruptException` is thrown.
+   `InterruptedException` is thrown.
 
  * Blocking Queues: As of this writing, I use the `ArrayBlockingQueue`
    data structure from `java.util.concurrent` for a couple of reasons:
